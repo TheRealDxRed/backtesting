@@ -66,3 +66,76 @@ with higher-R entries. At 1R, we're doing about as well as a coinflip (worse,
 even in the case of `ES`/`SPX500_USD`). That isn't good news. I'll mess around with
 trailing stops next to see if I can squeeze something out of this consistent
 winrate.
+
+## Overtrading
+
+Coming back to yesterday's problem with a clear head, there's no way a system
+like this should be trading any more than `272 * 5 = 1360` times on a 5 year
+backtest. I'm going to go back over the logic and see what I can do.
+
+Starting off, `if self.dataclose[0] >= self.pdh` checks _only_ for whether price
+closed above PDH. This is happening on the 15m candles, so that will only happen
+rarely - if ever. I've never used it before, but Backtrader supports something
+similar to tick-by-tick replays. If reducing `data0`'s granularity doesn't work,
+that's what I'll try next.
+
+First test leaves all the logic the same but reduces the `data0` time frame (the
+one we're trading on) to 1m:
+
+XAU_USD:
+
+```
+> python prolefoto/prior_day_reversal.py                                                                                                                                                                                        (ai)
+2025-08-24 11:48:52,674 - INFO - Starting Prior Day Reversal Strategy
+2025-08-24 11:48:52,674 - INFO - Connected to OANDA
+2025-08-24 11:48:52,683 - INFO - Data feeds added
+2025-08-24 11:48:52,683 - INFO - Starting Portfolio Value: 100000.00
+2025-08-24 11:48:52,683 - INFO - Running the strategy
+2025-08-24 11:56:21,147 - INFO - Strategy run completed
+2025-08-24 11:56:21,147 - INFO - Final Portfolio Value: 99872.47
+2025-08-24 11:56:21,261 - INFO - Sharpe Ratio: -13.321357329311633
+2025-08-24 11:56:21,261 - INFO - Max Drawdown: 0.45%
+2025-08-24 11:56:21,261 - INFO - Trades executed: 265792
+2025-08-24 11:56:21,261 - INFO - Number of winning trades: 131712
+2025-08-24 11:56:21,261 - INFO - Number of losing trades: 134080
+2025-08-24 11:56:21,261 - INFO - Win rate: 49.55%
+```
+
+I'm not going to bother testing this same code on the S&P. I somehow managed to
+trade nearly 200 times a day for 5 years.
+
+```
+>>> 265792 / (272 * 5)
+195.43529411764706
+```
+
+The granularity doesn't seem to be the problem, despite the ~20x increase in
+trade count. I have a feeling the trading logic itself is flawed. Time to get to
+work.
+
+### Brief aside and confession
+
+Okay here's the thing: I didn't write all of the trading logic myself. I started
+typing and Copilot came up with an entire `next` function on its own so I
+thought "What the hell, let's give it a try". Hindsight being 20/20, that was a
+mistake. I hate to admit it, but I think Copilot might be turning me into a
+braindead vibe coder...
+
+### Solution
+
+Now's the part where most people would just feel bad about themselves for
+relying too heavily on text completion algorithms like Copilot/GPT. Not me,
+though, 'cause now I get to write my own code! /s
+
+Here's what I want the strategy to do:
+
+```mermaid
+flowchart TD
+    A[NY open] --> B
+    B[Get PDH & PDL] --> C
+    C[Place OCO limits at PDH & PDL]
+```
+
+I'm looking at `trades.csv` right now and I've noticed a really funny pattern: The
+strategy is somehow placing 0-size trades every second minute of every day. What
+the actual hell!?

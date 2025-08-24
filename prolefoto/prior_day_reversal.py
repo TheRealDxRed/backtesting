@@ -13,7 +13,7 @@ from backtrader import TimeFrame
 # > 2. enter short if price taps PDH, enter long if price tals PDL.
 #
 # We're going to calculate the previous day high and low using daily bars.
-# Then we'll use 15-minute bars to trade the reversals.
+# Then we'll use a lower time frame to trade the reversals.
 # The stop loss will be 1/2 PDH-PDL away from the entry price.
 # Same thing for the profit target. 1R as they say.
 
@@ -42,12 +42,13 @@ def main():
     store = StoreCls(**storeargs)
     logging.info("Connected to OANDA")
 
+    # swap which instrument is commented here to change the instrument
+    instrument = "XAU_USD"
     # instrument = "SPX500_USD"
-    instrument = "SPX500_USD"
 
     data0kwargs = dict(
         timeframe=TimeFrame.Minutes,
-        compression=15,
+        compression=1,
         fromdate=bt.datetime.datetime(2020, 1, 1),
         todate=bt.datetime.datetime(2025, 1, 1),
         tz=pytz.timezone("US/Eastern"),
