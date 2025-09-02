@@ -110,3 +110,42 @@ flowchart TD
 ```
 
 I'm looking at `trades.csv` right now and I've noticed a really funny pattern: The strategy is somehow placing 0-size trades every second minute of every day. What the actual hell!?
+
+That means two things: The code isn't doing what I want it to and I'm glad no one else knows it. Let's walk through the code and see how badly Copilot fucked me here:
+
+```python
+if not self.position:
+    if self.dataclose[0] >= self.pdh:               # this is actually fine if dataclose uses a low timeframe (10s-5m)
+        size = 1
+        self.order = self.sell(size=size)           # it's just... not making brackets at all? wtf?
+        range_size = self.pdh - self.pdl
+        self.stop_price = self.dataclose[0] + (     # great. at least it *knows* the bracket size
+            range_size * self.p.stop_loss_perc
+        )
+        self.target_price = self.dataclose[0] - (
+            range_size * self.p.profit_target_perc
+        )
+    elif self.dataclose[0] <= self.pdl:
+        size = 1
+        self.order = self.buy(size=size)
+        range_size = self.pdh - self.pdl
+        self.stop_price = self.dataclose[0] - (
+            range_size * self.p.stop_loss_perc
+        )
+        self.target_price = self.dataclose[0] + (
+            range_size * self.p.profit_target_perc
+        )
+else:                                               # backtrader uses positive and negative position size
+    if self.position.size > 0:                      # depending on side, so this is only checking for longs right now
+        if self.dataclose[0] <= self.target_price:
+            self.close()                            # we shouldn't manually close EVER! that's what brackets are for
+        elif self.dataclose[0] >= self.stop_price:
+            self.close()
+    elif self.position.size < 0:
+        if self.dataclose[0] >= self.target_price:
+            self.close()
+        elif self.dataclose[0] <= self.stop_price:
+            self.close()
+```
+
+So basically, it's time to completely rewrite the trading logic. I get the feeling Copilot doesn't know how to read docs, which is ironic since the Backtrader source has been public on GH since 2015.
