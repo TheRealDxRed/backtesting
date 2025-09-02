@@ -329,6 +329,4 @@ That's... better? I still don't like it. Part of me wants to blame backtrader, b
 
 Unsurprisingly, that did _much_ worse than 50%. You can sort of prove this mathematically based on our win rate:
 
-> Since WR is approximately 1/3 (33.33%), that means we would need to win more than 3x what we would lose. Currently, we barely scratch past 33% WR, but we only win 3x (30% / 10%) our risk when we do. This makes the strategy essentially breakeven at these parameters.
-
-How about we try a smaller SL, then? I'll try 5% SL and 50% TP. This will make the minimum required WR roughly 10%. Still no guarantees this will work, though, since exiting at the close makes every trade nondeterministic.
+> Since WR is approximately 1/3 (33.33%), that means we would need to win more than 3x what we would lose. Currently, we barely scratch past 33% WR, but we only win 3x (30% / 10%) our risk when we do. This makes the strategy essentially breakeven at these parameters..
